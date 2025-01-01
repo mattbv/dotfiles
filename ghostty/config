@@ -1,0 +1,7 @@
+theme = catppuccin-mocha
+font-size = 15
+mouse-hide-while-typing = true
+window-decoration = true
+keybind = global:cmd+shift+s=toggle_quick_terminal
+background-opacity = 0.9
+background-blur-radius = 20
