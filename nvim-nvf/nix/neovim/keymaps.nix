@@ -30,14 +30,14 @@
     {
       key = "[d";
       mode = "n";
-      action = "vim.diagnostic.goto_prev";
+      action = "function() vim.diagnostic.jump({ count = -1 }) end";
       lua = true;
       desc = "Go to previous diagnostic message";
     }
     {
       key = "]d";
       mode = "n";
-      action = "vim.diagnostic.goto_next";
+      action = "function() vim.diagnostic.jump({ count = 1 }) end";
       lua = true;
       desc = "Go to next diagnostic message";
     }
