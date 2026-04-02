@@ -9,7 +9,7 @@ require 'config.lazy'
 vim.o.hlsearch = false
 
 -- Set shiftwidth and tabstops vim.opt.shiftwidth = 4
-vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
 
 -- Make line numbers default
 vim.wo.number = true

@@ -19,9 +19,6 @@ return { -- Collection of various small independent plugins/modules
     vim.cmd 'hi! link MiniCursorword Visual'
     vim.cmd 'hi! MiniCursorwordCurrent gui=nocombine guifg=NONE guibg=NONE'
 
-    local statusline = require 'mini.statusline'
-    statusline.setup { use_icons = true }
-
     require('mini.pairs').setup()
 
     require('mini.cursorword').setup()
