@@ -6,6 +6,9 @@ Personal configuration files for NixOS and development tools.
 
 ```
 ghostty/          # Ghostty terminal configuration
+herdr/            # Herdr desktop app config (refresh: sh herdr/backup.sh)
+  app/                # -> ~/.config/herdr-app (theme, layout, keys, settings, own mods)
+  core/               # -> ~/.config/herdr (herdr-core config.toml)
 nixos/            # NixOS system configuration
   configuration.nix   # Main NixOS config (deployed to /etc/nixos/)
   system-flake.nix    # System flake (deployed to /etc/nixos/flake.nix)
