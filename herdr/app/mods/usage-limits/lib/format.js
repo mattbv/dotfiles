@@ -15,6 +15,15 @@ export function timeLeft(sec) {
   return `${m}m`;
 }
 
+// The largest unit only, to fit where a percentage goes: "6d", "21h", "45m".
+export function shortLeft(sec) {
+  const s = Math.max(0, Math.floor(sec));
+  if (s < 60) return "<1m";
+  if (s >= 86400) return `${Math.floor(s / 86400)}d`;
+  if (s >= 3600) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 60)}m`;
+}
+
 export function tokens(n) {
   if (n < 1000) return String(n);
   if (n < 999500) return `${Math.round(n / 1000)}k`;

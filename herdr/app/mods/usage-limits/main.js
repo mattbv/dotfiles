@@ -7,7 +7,7 @@ import { View, div, image, svg } from "gpui-kit";
 import { HoverCard, h_flex, v_flex } from "gpui-base";
 import { exec, focused, theme, props, shared, setShared, appHome } from "herdr";
 import { PROVIDERS, addClaudeAccounts, isClaude } from "./providers/index.js";
-import { barModel, cardModel, chooseDensity, panelOnEnter } from "./lib/view.js";
+import { alignSegments, barModel, cardModel, chooseDensity, modelWidth, panelOnEnter, widestSegments } from "./lib/view.js";
 import { effectivePrefs, isOnBar, isShown, toggleOnBar, toggleProvider, toggleShowBars, toggleShowResetTime, toggleWindow } from "./lib/prefs.js";
 import { parseSession, sessionOnBar, sessionView } from "./lib/session.js";
 import { nextState } from "./lib/state.js";
@@ -203,7 +203,14 @@ export default class UsageLimits extends View {
     const pos = accounts.length > 1 ? accounts.findIndex((g) => g.providerId === shownId) : -1;
     const numbers = sessionOnBar(this.session?.data, prefs);
     const numbersWidth = numbers.reduce((w, n) => w + 7 * n.text.length + 14, numbers.length ? 14 : 0);
-    const density = chooseDensity(model, this.width ? this.width - 24 - numbersWidth : Infinity, prefs.showBars);
+    const room = this.width ? this.width - 24 - numbersWidth : Infinity;
+    // Claude accounts share one set of columns, so neither the next account nor a
+    // limit running out moves the bar. If those can't fit, use what's there now.
+    const widest = accounts.length ? widestSegments(accounts, prefs.showResetTime) : null;
+    const worst = widest && { groups: groups.map((g) => (g.providerId === shownId ? { ...g, segments: widest } : g)) };
+    let density = chooseDensity(worst ?? model, room, prefs.showBars);
+    const reserve = worst != null && modelWidth(worst, density) <= room;
+    if (!reserve) density = chooseDensity(model, room, prefs.showBars);
     const root = h_flex().id("root").size_full().px(12).items_center().justify_end().overflow_hidden()
       .bg(t.chrome).border_t(1).border_color(t.border).text_size(11.8).text_color(t.muted)
       .on_size_change((size, cx) => { this.width = size.width; cx.notify(); });
@@ -215,10 +222,14 @@ export default class UsageLimits extends View {
       if (!model.empty) content.child(div().w(1).h(14).bg(t.border).flex_none());
     }
     if (model.empty) content.child(div().id("ul-empty").child(svg(`mods/${MOD}/icons/gauge.svg`).size(14)));
+    const gap = density === 0 ? 10 : 8;
+    const counters = (g) => h_flex().gap(gap).items_center().flex_none()
+      .when(g.mark != null, (e) => e.child(div().text_color(t.dim).child(g.mark)))
+      .children(g.segments.map((s) => this.segment(s, density, t)));
     model.groups.forEach((g, i) => {
       if (i > 0) content.child(div().w(1).h(14).bg(t.border).flex_none());
       content.child(
-        h_flex().id(`ul-${g.providerId}`).gap(density === 0 ? 10 : 8).items_center().flex_none()
+        h_flex().id(`ul-${g.providerId}`).gap(gap).items_center().flex_none()
           .opacity(g.dim ? 0.55 : 1)
           .when(pos >= 0 && g.providerId === shownId, (e) => e
             .cursor_pointer()
@@ -231,8 +242,11 @@ export default class UsageLimits extends View {
                 .when(a.providerId !== g.providerId, (d) => d.h(0).overflow_hidden().opacity(0))
                 .child(a.tag)))
             : div().text_color(t.muted).child(g.tag)))
-          .when(g.mark != null, (e) => e.child(div().text_color(t.dim).child(g.mark)))
-          .children(g.segments.map((s) => this.segment(s, density, t))));
+          .child(reserve && g.providerId === shownId
+            ? v_flex().flex_none().items_end()
+                .child(counters({ mark: null, segments: widest }).h(0).overflow_hidden().opacity(0))
+                .child(counters({ mark: g.mark, segments: alignSegments(g.segments, widest) }))
+            : counters(g)));
     });
     const panel = cardModel(st, now());
     // With no CLI installed there are no limits to show, so settings are all there is.
