@@ -1,19 +1,20 @@
 // What the bar and its hover card show, as plain data. Pure: no Herdr imports.
-import { timeLeft, level, pace, ago } from "./format.js";
+import { timeLeft, shortLeft, level, pace, ago } from "./format.js";
 import { isShown } from "./prefs.js";
 import { PROVIDERS } from "../providers/index.js";
 
 const STALE_AFTER = 15 * 60; // s
 
-// text is the full reading; brief is what's left when the bar runs out of room:
-// an amber or red window keeps its time, a calm one gives it up.
+// brief fits the width of "100%": the percentage or, once a limit is used up, the
+// time until it resets (what matters then). text adds the time when asked to.
 export function segmentView(w, now, showResetTime = false) {
   if (w.resetsAt != null && w.resetsAt <= now) {
     return { id: w.id, short: w.short, text: "—", brief: "—", level: "ok", fill: 0, tick: null, expired: true };
   }
   const lv = level(w.percent);
   const left = w.resetsAt != null ? ` · ${timeLeft(w.resetsAt - now)}` : "";
-  const brief = `${w.percent}%${lv !== "ok" ? left : ""}`;
+  const spent = w.percent >= 100 && w.resetsAt != null;
+  const brief = spent ? shortLeft(w.resetsAt - now) : `${w.percent}%`;
   return {
     id: w.id,
     short: w.short,
@@ -118,11 +119,32 @@ function segmentWidth(s, density) {
   return density === 1 ? label + text : label + 30 + text;
 }
 
+export function modelWidth(model, density) {
+  return model.groups.reduce((sum, g) => sum + GROUP + g.segments.reduce((a, s) => a + segmentWidth(s, density), 0), 0);
+}
+
 // 0 = label + bar + percent, 1 = no bars, 2 = no labels, 3 = no time on calm windows.
 export function chooseDensity(model, widthPx, showBars = true) {
   for (const d of showBars ? [0, 1, 2, 3] : [1, 2, 3]) {
-    const need = model.groups.reduce((sum, g) => sum + GROUP + g.segments.reduce((a, s) => a + segmentWidth(s, d), 0), 0);
-    if (need <= widthPx) return d;
+    if (modelWidth(model, d) <= widthPx) return d;
   }
   return 3;
+}
+
+// Every window any of these accounts has, each at its widest reading. All accounts
+// use these columns, so the bar stays still between them and when a limit runs out.
+export function widestSegments(accounts, showResetTime = false) {
+  const widest = showResetTime ? "100% · 00h 00m" : "100%";
+  const byId = new Map();
+  for (const g of accounts) {
+    for (const s of g.segments) {
+      if (!byId.has(s.id)) byId.set(s.id, { ...s, text: widest, brief: widest, level: "ok", fill: 0, tick: null });
+    }
+  }
+  return [...byId.values()];
+}
+
+// An account's readings in those columns; a window it doesn't have shows a dash.
+export function alignSegments(segments, columns) {
+  return columns.map((c) => segments.find((s) => s.id === c.id) ?? { ...c, text: "—", brief: "—" });
 }

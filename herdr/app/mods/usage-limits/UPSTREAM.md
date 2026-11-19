@@ -14,6 +14,9 @@ Local changes:
   click to skip), with position dots (main.js).
 - Fixed widths: the account label is as wide as the longest name, percents have a
   minimum width, so the bar doesn't shift (main.js, lib/view.js).
+- Claude accounts share one set of columns (a window an account lacks shows "—"), and
+  a reading is only the percentage, or the time to reset once a limit is used up
+  ("6d"), so the bar stays put (main.js, lib/view.js, lib/format.js).
 
 Upstream has since been restructured (ui/, io/) and added OpenCode and Pi; updating
 means porting the changes above onto the new layout.
